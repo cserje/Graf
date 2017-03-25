@@ -340,7 +340,7 @@ public:
 									// vertex coordinates: vbo[0] -> Attrib Array 0 -> vertexPosition of the vertex shader
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // make it active, it is an array
 											   //static float vertexCoords[] = { -8, -8, -6, 10, 8, -2 };	// vertex data on the CPU
-		static float vertexCoords[10000] = {};
+		float vertexCoords[10000] = {};
 
 		int col = 0;
 		int coord = 0;
@@ -383,7 +383,7 @@ public:
 
 						  // vertex colors: vbo[1] -> Attrib Array 1 -> vertexColor of the vertex shader
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]); // make it active, it is an array
-		static float vertexColors[10000] = {};
+		float vertexColors[10000] = {};
 		float red = 0.4;
 		float green = 0.1;
 		float blue = 0.3;
@@ -470,18 +470,17 @@ class LagrangeCurve {
 	}
 
 public:
+
 	LagrangeCurve() {
 		nPoints = 0;
 	}
 
 	void AddControlPoint(vec4 cp, float t) {
 		if (nPoints < 20) {
-			std::cout << nPoints << ". elem hozzaadva" << std::endl;
 			cps[nPoints] = cp;
 			ts[nPoints] = t;
-			std::cout << nPoints << std::endl;
-			//StartTime();
-			//EndTime();
+			StartTime();
+			EndTime();
 			++nPoints;
 		}
 
@@ -494,13 +493,11 @@ public:
 	}
 
 	float StartTime() {
-		//std::cout << "start: " << ts[0] << ", ";
 		return ts[0];
 
 	}
 	float EndTime() {
-		//std::cout << "end: " << ts[nPoints] << std::endl;
-		return ts[nPoints];
+			return ts[nPoints-1];
 	}
 
 
@@ -536,20 +533,14 @@ public:
 			return;
 
 		vec4 wVertex = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv();
-		// fill interleaved data
-		/*	vertexData[5 * nVertices] = wVertex.v[0];
-		vertexData[5 * nVertices + 1] = wVertex.v[1];
-		vertexData[5 * nVertices + 2] = 1; // red
-		vertexData[5 * nVertices + 3] = 1; // green
-		vertexData[5 * nVertices + 4] = 1; // blue
-		nVertices++;
-		*/
+
 		lagrangeCurve.AddControlPoint(wVertex, sec);
+		
 		
 		nVertices++;
 		int cnt = 0;
 		if (nVertices >= 2) {
-			for (float t = lagrangeCurve.StartTime(); cnt<5000; t += (lagrangeCurve.EndTime() - lagrangeCurve.EndTime()) / 5000, cnt++) {
+			for (float t = lagrangeCurve.StartTime(); cnt<20; t += (lagrangeCurve.EndTime() - lagrangeCurve.EndTime()) / 20, cnt++) {
 				vec4 vec = lagrangeCurve.r(t);
 				vertexData[5 * cnt] = vec.v[0];
 				vertexData[5 * cnt + 1] = vec.v[1];
@@ -647,6 +638,7 @@ void onDisplay() {
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
 	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
+	if (key == 's') std::cout << lagrangeCurve.StartTime()<<" "<<lagrangeCurve.EndTime()<<std::endl;
 }
 
 // Key of ASCII code released
