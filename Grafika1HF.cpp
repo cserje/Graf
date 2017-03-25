@@ -1,5 +1,5 @@
 //=============================================================================================
-// Szamitogepes grafika hazi feladat keret. Ervenyes 2016-tol.
+// Szamitogepes grafika hazi feladat keret. Ervenyes 2017-tol.
 // A //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // sorokon beluli reszben celszeru garazdalkodni, mert a tobbit ugyis toroljuk.
 // A beadott program csak ebben a fajlban lehet, a fajl 1 byte-os ASCII karaktereket tartalmazhat.
@@ -14,12 +14,12 @@
 // es a leggyakoribb hibakrol (pl. ideiglenes objektumot nem lehet referencia tipusnak ertekul adni)
 // a hazibeado portal ad egy osszefoglalot.
 // ---------------------------------------------------------------------------------------------
-// A feladatmegoldasokban csak olyan OpenGL fuggvenyek hasznalhatok, amelyek az oran a feladatkiadasig elhangzottak
+// A feladatmegoldasokban csak olyan OpenGL/GLUT fuggvenyek hasznalhatok, amelyek az oran a feladatkiadasig elhangzottak 
 //
 // NYILATKOZAT
 // ---------------------------------------------------------------------------------------------
-// Nev    :
-// Neptun :
+// Nev    : Cserjési Kristóf Jenõ
+// Neptun : ZMCHI1
 // ---------------------------------------------------------------------------------------------
 // ezennel kijelentem, hogy a feladatot magam keszitettem, es ha barmilyen segitseget igenybe vettem vagy
 // mas szellemi termeket felhasznaltam, akkor a forrast es az atvett reszt kommentekben egyertelmuen jeloltem.
@@ -36,10 +36,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-//TODO: ki kell törölni az iostream-et
-#include <iostream>
-#include <vector>
 
+#include <vector>
+#include <iostream>
 #if defined(__APPLE__)
 #include <GLUT/GLUT.h>
 #include <OpenGL/gl3.h>
@@ -48,17 +47,18 @@
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 #include <windows.h>
 #endif
-#include <GL/glew.h>		// must be downloaded
+#include <GL/glew.h>		// must be downloaded 
 #include <GL/freeglut.h>	// must be downloaded unless you have an Apple
 #endif
+
 
 const unsigned int windowWidth = 600, windowHeight = 600;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Innentol modosithatod...
+// You are supposed to modify the code from here...
 
 // OpenGL major and minor versions
-int majorVersion = 3, minorVersion = 0;
+int majorVersion = 3, minorVersion = 1;
 
 void getErrorInfo(unsigned int handle) {
 	int logLen;
@@ -93,15 +93,15 @@ void checkLinking(unsigned int program) {
 }
 
 // vertex shader in GLSL
-const char *vertexSource = R"(
-	#version 130
+const char * vertexSource = R"(
+	#version 330
     precision highp float;
 
 	uniform mat4 MVP;			// Model-View-Projection matrix in row-major format
 
-	in vec2 vertexPosition;		// variable input from Attrib Array selected by glBindAttribLocation
-	in vec3 vertexColor;	    // variable input from Attrib Array selected by glBindAttribLocation
-	out vec3 color;				// output attribute
+	layout(location = 0) in vec2 vertexPosition;	// Attrib Array 0
+	layout(location = 1) in vec3 vertexColor;	    // Attrib Array 1
+	out vec3 color;									// output attribute
 
 	void main() {
 		color = vertexColor;														// copy color from input to output
@@ -110,8 +110,8 @@ const char *vertexSource = R"(
 )";
 
 // fragment shader in GLSL
-const char *fragmentSource = R"(
-	#version 130
+const char * fragmentSource = R"(
+	#version 330
     precision highp float;
 
 	in vec3 color;				// variable input: interpolated color of vertex shader
@@ -139,12 +139,12 @@ public:
 	mat4 operator*(const int right)
 	{
 		mat4 result;
-	for (int i = 0; i < 4; ++i)
-	{
-		for (int j = 0; j < 4; ++j) {
-			result.m[i][j] = m[i][j] * right;
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j) {
+				result.m[i][j] = m[i][j] * right;
+			}
 		}
-	}
 		return result;
 	}
 
@@ -209,7 +209,7 @@ public:
 	mat4 V() { // view matrix: translates the center to the origin
 		return mat4(1, 0, 0, 0,
 			0, 1, 0, 0,
-			0, 0,	1, 0,
+			0, 0, 1, 0,
 			-wCx, -wCy, 0, 1);
 	}
 
@@ -250,7 +250,7 @@ unsigned int shaderProgram;
 
 
 
-double BezierBlend(int k,double mu,int n)
+double BezierBlend(int k, double mu, int n)
 {
 	int nn, kn, nkn;
 	double blend = 1;
@@ -298,9 +298,9 @@ public:
 		{
 			for (int j = 0; j < 21; ++j)
 			{
-				coords[i][j][0] = (float) i - 10;
-				coords[i][j][1] = (float) j - 10;
-				coords[i][j][2] = (rand() % 1500);
+				coords[i][j][0] = (float)i - 10;
+				coords[i][j][1] = (float)j - 10;
+				coords[i][j][2] = (float) (rand() % 1500);
 				coords[i][j][2] /= 1500;
 				coords[i][j][2] = 1 - coords[i][j][2];
 				std::cout << coords[i][j][0] << ' ' << coords[i][j][1] << ' ' << coords[i][j][2] << std::endl;
@@ -456,11 +456,9 @@ public:
 class LagrangeCurve {
 
 
-	vec4 cps[20];
-	// control points
-	float ts[20];
-	// parameter (knot) values
-	int nPoints=0;
+	vec4 cps[20];// control points
+	float ts[20];// parameter (knot) values
+	int nPoints = 0;
 
 	float L(int i, float t) {
 		float Li = 1.0f;
@@ -479,7 +477,7 @@ public:
 			ts[nPoints] = t;
 			nPoints++;
 		}
-	
+
 	}
 	vec4 r(float t) {
 		vec4 rr(0, 0, 0, 0);
@@ -520,7 +518,7 @@ public:
 																										// Map attribute array 1 to the color data of the interleaved vbo
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
 	}
-	
+
 	void AddPoint(float cX, float cY, float sec) {
 		if (nVertices >= 20) return;
 
@@ -545,7 +543,7 @@ public:
 				vertexData[5 * cnt + 3] = (float)0.2; // green
 				vertexData[5 * cnt + 4] = (float)0.7; // blue
 			}
-			}
+		}
 		// copy data to the GPU
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), vertexData, GL_DYNAMIC_DRAW);
@@ -574,8 +572,8 @@ void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
 
 	// Create objects by setting up their vertex data on the GPU
-	triangle.Create();
 	lineStrip.Create();
+	triangle.Create();
 
 	// Create vertex shader from string
 	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -606,11 +604,7 @@ void onInitialization() {
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
 
-	// Connect Attrib Arrays to input variables of the vertex shader
-	glBindAttribLocation(shaderProgram, 0, "vertexPosition"); // vertexPosition gets values from Attrib Array 0
-	glBindAttribLocation(shaderProgram, 1, "vertexColor");    // vertexColor gets values from Attrib Array 1
-
-															  // Connect the fragmentColor to the frame buffer memory
+	// Connect the fragmentColor to the frame buffer memory
 	glBindFragDataLocation(shaderProgram, 0, "fragmentColor");	// fragmentColor goes to the frame buffer memory
 
 																// program packaging
@@ -627,7 +621,7 @@ void onExit() {
 
 // Window has become invalid: Redraw
 void onDisplay() {
-	glClearColor(0, 0, 0, 0);							// background color
+	glClearColor(0, 0, 0, 0);							// background color 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
 
 	triangle.Draw();
@@ -652,7 +646,6 @@ void onMouse(int button, int state, int pX, int pY) {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {  // GLUT_LEFT_BUTTON / GLUT_RIGHT_BUTTON and GLUT_DOWN / GLUT_UP
 		float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
 		float cY = 1.0f - 2.0f * pY / windowHeight;
-		std::cout << cX << " " << cY;
 		lineStrip.AddPoint(cX, cY, sec);
 		glutPostRedisplay();     // redraw
 	}
@@ -671,8 +664,8 @@ void onIdle() {
 	glutPostRedisplay();					// redraw the scene
 }
 
-// Idaig modosithatod...
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Do not touch the code below this line
 
 int main(int argc, char * argv[]) {
 	glutInit(&argc, argv);
@@ -682,7 +675,7 @@ int main(int argc, char * argv[]) {
 	glutInitWindowSize(windowWidth, windowHeight);				// Application window is initially of resolution 600x600
 	glutInitWindowPosition(100, 100);							// Relative location of the application window
 #if defined(__APPLE__)
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_3_2_CORE_PROFILE);  // 8 bit R,G,B,A + double buffer + depth buffer
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_3_3_CORE_PROFILE);  // 8 bit R,G,B,A + double buffer + depth buffer
 #else
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
 #endif
@@ -714,3 +707,4 @@ int main(int argc, char * argv[]) {
 	onExit();
 	return 1;
 }
+
