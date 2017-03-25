@@ -479,8 +479,6 @@ public:
 		if (nPoints < 20) {
 			cps[nPoints] = cp;
 			ts[nPoints] = t;
-			StartTime();
-			EndTime();
 			++nPoints;
 		}
 
@@ -543,10 +541,11 @@ public:
 			for (float t = lagrangeCurve.StartTime(); cnt<20; t += (lagrangeCurve.EndTime() - lagrangeCurve.EndTime()) / 20, cnt++) {
 				vec4 vec = lagrangeCurve.r(t);
 				vertexData[5 * cnt] = vec.v[0];
+				std::cout << vec.v[0] << " " << vec.v[1] << std::endl;
 				vertexData[5 * cnt + 1] = vec.v[1];
 				vertexData[5 * cnt + 2] = (float)1; // red
-				vertexData[5 * cnt + 3] = (float)0.2; // green
-				vertexData[5 * cnt + 4] = (float)0.7; // blue
+				vertexData[5 * cnt + 3] = (float)1; // green
+				vertexData[5 * cnt + 4] = (float)1; // blue
 			}
 		}
 		// copy data to the GPU
@@ -563,7 +562,7 @@ public:
 			else printf("uniform MVP cannot be set\n");
 
 			glBindVertexArray(vao);
-			glDrawArrays(GL_LINE_STRIP, 0, 5000);
+			glDrawArrays(GL_LINE_STRIP, 0, 100);
 		}
 	}
 };
