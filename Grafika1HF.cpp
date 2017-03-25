@@ -324,7 +324,7 @@ public:
 					double bi = BezierBlend(ki, mui, 20);
 					for (int kj = 0; kj <= 20; kj++) {
 						double bj = BezierBlend(kj, muj, 20);
-						outp[i][j][0] += (coords[ki][kj][0] * bi * bj);
+						outp[i][j][0] +=  (coords[ki][kj][0] * bi * bj);
 						outp[i][j][1] += (coords[ki][kj][1] * bi * bj);
 						outp[i][j][2] += (coords[ki][kj][2] * bi * bj);
 					}
@@ -458,7 +458,8 @@ class LagrangeCurve {
 
 	vec4 cps[20];// control points
 	float ts[20];// parameter (knot) values
-	int nPoints = 0;
+	int nPoints;
+
 
 	float L(int i, float t) {
 		float Li = 1.0f;
@@ -469,13 +470,19 @@ class LagrangeCurve {
 	}
 
 public:
-
+	LagrangeCurve() {
+		nPoints = 0;
+	}
 
 	void AddControlPoint(vec4 cp, float t) {
 		if (nPoints < 20) {
+			std::cout << nPoints << ". elem hozzaadva" << std::endl;
 			cps[nPoints] = cp;
 			ts[nPoints] = t;
-			nPoints++;
+			std::cout << nPoints << std::endl;
+			//StartTime();
+			//EndTime();
+			++nPoints;
 		}
 
 	}
@@ -487,9 +494,12 @@ public:
 	}
 
 	float StartTime() {
+		//std::cout << "start: " << ts[0] << ", ";
 		return ts[0];
+
 	}
 	float EndTime() {
+		//std::cout << "end: " << ts[nPoints] << std::endl;
 		return ts[nPoints];
 	}
 
@@ -520,7 +530,10 @@ public:
 	}
 
 	void AddPoint(float cX, float cY, float sec) {
-		if (nVertices >= 20) return;
+		
+		
+		if (nVertices >= 20)
+			return;
 
 		vec4 wVertex = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv();
 		// fill interleaved data
@@ -532,6 +545,7 @@ public:
 		nVertices++;
 		*/
 		lagrangeCurve.AddControlPoint(wVertex, sec);
+		
 		nVertices++;
 		int cnt = 0;
 		if (nVertices >= 2) {
@@ -573,6 +587,7 @@ void onInitialization() {
 
 	// Create objects by setting up their vertex data on the GPU
 	lineStrip.Create();
+	
 	triangle.Create();
 
 	// Create vertex shader from string
