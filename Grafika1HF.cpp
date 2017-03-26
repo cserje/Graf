@@ -186,14 +186,14 @@ struct vec4 {
 		}
 		return result;
 	}
-	vec4 operator+=(const vec4& vecRight)
+	void operator+=(const vec4& vecRight)
 	{
-		vec4 result;
+
 		for (int i = 0; i < 4; ++i)
 		{
-			result.v[i] = v[i] + vecRight.v[i];
+			v[i] += vecRight.v[i];
 		}
-		return result;
+
 	}
 };
 
@@ -300,7 +300,7 @@ public:
 			{
 				coords[i][j][0] = (float)i - 10;
 				coords[i][j][1] = (float)j - 10;
-				coords[i][j][2] = (float) (rand() % 1500);
+				coords[i][j][2] = (float)(rand() % 1500);
 				coords[i][j][2] /= 1500;
 				coords[i][j][2] = 1 - coords[i][j][2];
 				std::cout << coords[i][j][0] << ' ' << coords[i][j][1] << ' ' << coords[i][j][2] << std::endl;
@@ -324,7 +324,7 @@ public:
 					double bi = BezierBlend(ki, mui, 20);
 					for (int kj = 0; kj <= 20; kj++) {
 						double bj = BezierBlend(kj, muj, 20);
-						outp[i][j][0] +=  (coords[ki][kj][0] * bi * bj);
+						outp[i][j][0] += (coords[ki][kj][0] * bi * bj);
 						outp[i][j][1] += (coords[ki][kj][1] * bi * bj);
 						outp[i][j][2] += (coords[ki][kj][2] * bi * bj);
 					}
@@ -346,7 +346,7 @@ public:
 		int coord = 0;
 		for (int i = 0; i < 20; ++i)
 		{
-			for (int j = 0; j <20; ++j)
+			for (int j = 0; j < 20; ++j)
 			{
 				vertexCoords[coord] = outp[j][i][0];
 				vertexCoords[coord + 1] = outp[j][i][1];
@@ -453,54 +453,6 @@ public:
 		glDrawArrays(GL_TRIANGLES, 0, 2400);	// draw a single triangle with vertices defined in vao
 	}
 };
-class LagrangeCurve {
-
-
-	vec4 cps[20];// control points
-	float ts[20];// parameter (knot) values
-	int nPoints;
-
-
-	float L(int i, float t) {
-		float Li = 1.0f;
-		for (int j = 0; j < nPoints; j++)
-			if (j != i)
-				Li *= (t - ts[j]) / (ts[i] - ts[j]);
-		return Li;
-	}
-
-public:
-
-	LagrangeCurve() {
-		nPoints = 0;
-	}
-
-	void AddControlPoint(vec4 cp, float t) {
-		if (nPoints < 20) {
-			cps[nPoints] = cp;
-			ts[nPoints] = t;
-			++nPoints;
-		}
-
-	}
-	vec4 r(float t) {
-		vec4 rr(0, 0, 0, 0);
-		for (int i = 0; i < nPoints; i++)
-			rr += cps[i] * L(i, t);
-		return rr;
-	}
-
-	float StartTime() {
-		return ts[0];
-
-	}
-	float EndTime() {
-			return ts[nPoints-1];
-	}
-
-
-};
-LagrangeCurve lagrangeCurve;
 class LineStrip {
 	GLuint vao, vbo;        // vertex array object, vertex buffer object
 	float  vertexData[100]; // interleaved data of coordinates and colors
@@ -524,32 +476,19 @@ public:
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
 	}
 
-	void AddPoint(float cX, float cY, float sec) {
-		
-		
-		if (nVertices >= 20)
-			return;
+	void AddPoint(float cX, float cY) {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		if (nVertices >= 20) return;
 
 		vec4 wVertex = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv();
-
-		lagrangeCurve.AddControlPoint(wVertex, sec);
-		
-		
+		// fill interleaved data
+		vertexData[5 * nVertices] = wVertex.v[0];
+		vertexData[5 * nVertices + 1] = wVertex.v[1];
+		vertexData[5 * nVertices + 2] = 1; // red
+		vertexData[5 * nVertices + 3] = 1; // green
+		vertexData[5 * nVertices + 4] = 1; // blue
 		nVertices++;
-		int cnt = 0;
-		if (nVertices >= 2) {
-			for (float t = lagrangeCurve.StartTime(); cnt<20; t += (lagrangeCurve.EndTime() - lagrangeCurve.EndTime()) / 20, cnt++) {
-				vec4 vec = lagrangeCurve.r(t);
-				vertexData[5 * cnt] = vec.v[0];
-				std::cout << vec.v[0] << " " << vec.v[1] << std::endl;
-				vertexData[5 * cnt + 1] = vec.v[1];
-				vertexData[5 * cnt + 2] = (float)1; // red
-				vertexData[5 * cnt + 3] = (float)1; // green
-				vertexData[5 * cnt + 4] = (float)1; // blue
-			}
-		}
 		// copy data to the GPU
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), vertexData, GL_DYNAMIC_DRAW);
 	}
 
@@ -562,10 +501,82 @@ public:
 			else printf("uniform MVP cannot be set\n");
 
 			glBindVertexArray(vao);
-			glDrawArrays(GL_LINE_STRIP, 0, 100);
+			glDrawArrays(GL_LINE_STRIP, 0, nVertices);
 		}
 	}
 };
+class LagrangeCurve {
+
+
+	vec4 cps[20];// control points
+	float ts[20];// parameter (knot) values
+	int nPoints;
+
+
+	float L(int i, float t) {
+		float Li = 1.0f;
+		for (int j = 0; j < nPoints; j++)
+			if (j != i)
+			{
+				Li *= (t - ts[j]) / (ts[i] - ts[j]);
+			}
+		return Li;
+	}
+
+public:
+	LagrangeCurve() {
+		nPoints = 0;
+	}
+	void AddControlPoint(vec4 cp, float t) {
+		if (nPoints < 20) {
+			cps[nPoints] = cp;
+			ts[nPoints] = t;
+			++nPoints;
+		}
+	}
+	vec4 r(float t) {
+		vec4 rr(0, 0, 0, 0);
+		for (int i = 0; i < nPoints; i++) {
+			rr += cps[i] * L(i, t);
+
+		}
+		return rr;
+	}
+
+	float StartTime() {
+		return ts[0];
+
+	}
+	float EndTime() {
+		return ts[nPoints - 1];
+	}
+	void Draw() {
+		for (int i = 0; i < nPoints-1; ++i)
+		{
+			vec4 v1, v2;
+			v1 = cps[i];
+			v2 = cps[i + 1];
+
+			LineStrip subline;
+			subline.Create();
+			subline.AddPoint(v1.v[0], v1.v[1]);
+			for (int tempTime = 1; tempTime <= 18; ++tempTime)
+			{
+				float time = ts[i] + (ts[i + 1] - ts[i]) / 18.0 * tempTime;
+				vec4 val = r(time);
+				subline.AddPoint(val.v[0], val.v[1]);
+			}
+			subline.AddPoint(v2.v[0], v2.v[1]);
+				subline.Draw();
+
+			}
+		}
+	
+
+
+};
+LagrangeCurve lagrangeCurve;
+
 
 // The virtual world: collection of two objects
 Triangle triangle;
@@ -577,7 +588,7 @@ void onInitialization() {
 
 	// Create objects by setting up their vertex data on the GPU
 	lineStrip.Create();
-	
+
 	triangle.Create();
 
 	// Create vertex shader from string
@@ -630,14 +641,14 @@ void onDisplay() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
 
 	triangle.Draw();
-	lineStrip.Draw();
+	lagrangeCurve.Draw();
 	glutSwapBuffers();									// exchange the two buffers
 }
 
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
 	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
-	if (key == 's') std::cout << lagrangeCurve.StartTime()<<" "<<lagrangeCurve.EndTime()<<std::endl;
+	if (key == 's') std::cout << lagrangeCurve.StartTime() << " " << lagrangeCurve.EndTime() << std::endl;
 }
 
 // Key of ASCII code released
@@ -652,7 +663,7 @@ void onMouse(int button, int state, int pX, int pY) {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {  // GLUT_LEFT_BUTTON / GLUT_RIGHT_BUTTON and GLUT_DOWN / GLUT_UP
 		float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
 		float cY = 1.0f - 2.0f * pY / windowHeight;
-		lineStrip.AddPoint(cX, cY, sec);
+		lagrangeCurve.AddControlPoint(vec4(cX, cY,0), time);
 		glutPostRedisplay();     // redraw
 	}
 }
